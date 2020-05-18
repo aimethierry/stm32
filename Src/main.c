@@ -52,6 +52,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 void EXTI10_15_IRQHandler(void);
+
+int interruptCalled = -1;
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -145,47 +147,42 @@ int main(void)
   
   //TURN ON THE LED 
   LED_TURNON();
-  
-  /* USER CODE END 2 */
-  
 
-
-
-  // 
-
-  //it is on place 4                          SYSCFG_EXTICR4_EXTI14
- /* SYSCFG->EXTICR[4]  = (SYSCFG->EXTICR[4]  & ~SYSCFG_EXTICR1_EXTI0_PC)  |
+  //it is on place 4                     
+  SYSCFG->EXTICR[4]  = (SYSCFG->EXTICR[4]  & ~SYSCFG_EXTICR1_EXTI0_PC)  |
                         (0b0010 << SYSCFG_EXTICR1_EXTI0_Pos);  // pin PC0 to interrupt  EXTI0
   
-  EXTI->FTSR  =  EXTI_FTSR_TR13;   
-  EXTI->IMR  = EXTI_IMR_MR13;  
-  NVIC_EnableIRQ(EXTI15_10_IRQn);  */
-  
+  EXTI->FTSR  =  EXTI_FTSR_TR13;    //setting up to the edge 
+  EXTI->IMR  = EXTI_IMR_MR13;       //interrupt masking register 
+  NVIC_EnableIRQ(EXTI15_10_IRQn);   //enable external interrupt 
+
   while (1)
   {
-      if(boardButton() == 0)
+      
+      GPIOA->ODR |= GPIO_ODR_5;
+      HAL_Delay(1000);
+      GPIOA->ODR &= ~GPIO_ODR_5;
+      HAL_Delay(200);
+      printf("check if the interrupts are called %d \n", interruptCalled);
+      
+      if(interruptCalled > 0)
       {
         GPIOA->ODR |= GPIO_ODR_5;
-        HAL_Delay(1000);
-        GPIOA->ODR &= ~GPIO_ODR_5;
-        HAL_Delay(300);
+        HAL_Delay(10000);
+        interruptCalled = 0;
       }
   }
   return 0;
 }
 
 
-void EXTI0_IRQHandler(void)
+void EXTI15_10_IRQHandler(void)
 {
-  // printf("am in here \n");
-  // mycount++;
-  // GPIOA->MODER = (GPIOA->MODER & ~GPIO_MODER_MODER5) |
-  // 			   (0b01 << GPIO_MODER_MODER5_Pos);       // set pin PA5 to output.
-  // GPIOA->OTYPER &= ~GPIO_OTYPER_OT_5;                // set pin PA5 to output type to push-pull
-  // GPIOA->ODR |= GPIO_ODR_5;
-
+  if(boardButton() == 0)
+  {
+    interruptCalled++;
+  }
   EXTI->PR |= EXTI_PR_PR13;
-  mycount++;
 }
 
 /**
