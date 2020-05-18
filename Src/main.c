@@ -81,13 +81,23 @@ void LED_TURNON()
 				   (0b01 << GPIO_MODER_MODER5_Pos);       // set pin PA5 to output.
 	
   GPIOA->OTYPER &= ~GPIO_OTYPER_OT_5;                   // set pin PA5 to output type to push-pull
-	GPIOA->ODR |= GPIO_ODR_5;                             // set pin PA5 to high	
+		
 }
 
 
 int boardButton()
 {
-  
+  GPIOC->MODER = (GPIOC->MODER & ~GPIO_MODER_MODER13) |
+                  (0b00 << GPIO_MODER_MODER13_Pos);    //set pin to input 
+
+                
+  GPIOC->PUPDR = (GPIOC->PUPDR & ~GPIO_PUPDR_PUPDR13) |
+                  (0b01 << GPIO_PUPDR_PUPDR13_Pos);
+
+  if((GPIOC->IDR & GPIO_IDR_13)== 0)
+  {
+    return 0;
+  }
   return -1; 
 }
 
@@ -97,23 +107,6 @@ void Delay(int millisecond)
 {
   int time = mystick;
 	while((mystick - time ) < (millisecond));
-}
-
-// int buttonInterrupt(int millisecond)
-// {
-//   int time = mystick;
-// 	while((mystick - time ) < (millisecond));
-//   return 
-// }
-
-int btnPressed()
-{
-  if ((GPIOC->IDR & GPIO_IDR_13) == 0)                    // Test for pin PA0 being low
-	{
-    printf("button pressed ");
-    return 1;
-  }
-  return 0 ;
 }
 
 
@@ -156,59 +149,30 @@ int main(void)
   /* USER CODE END 2 */
   
 
-	GPIOC->MODER = (GPIOC->MODER & ~GPIO_MODER_MODER13) |
-               (0b00 << GPIO_MODER_MODER13_Pos);       // set pin PA0 to input.
-	
-	GPIOC->PUPDR = (GPIOC->PUPDR & ~GPIO_PUPDR_PUPDR13) |
-               (0b01 << GPIO_PUPDR_PUPDR13_Pos);       // set pin PA0 pull-up/pull-down to pull-up
-               
-  
-  
-    
 
 
   // 
 
   //it is on place 4                          SYSCFG_EXTICR4_EXTI14
-  SYSCFG->EXTICR[4]  = (SYSCFG->EXTICR[4]  & ~SYSCFG_EXTICR1_EXTI0_PC)  |
+ /* SYSCFG->EXTICR[4]  = (SYSCFG->EXTICR[4]  & ~SYSCFG_EXTICR1_EXTI0_PC)  |
                         (0b0010 << SYSCFG_EXTICR1_EXTI0_Pos);  // pin PC0 to interrupt  EXTI0
   
   EXTI->FTSR  =  EXTI_FTSR_TR13;   
   EXTI->IMR  = EXTI_IMR_MR13;  
-  NVIC_EnableIRQ(EXTI15_10_IRQn); 
+  NVIC_EnableIRQ(EXTI15_10_IRQn);  */
   
   while (1)
   {
-
-   
-
-  // USER CODE END WHILE 
-  if (btnPressed() != 0)                    // Test for pin PA0 being low
-	{
-		GPIOA->ODR |= GPIO_ODR_5;                             // set pin PA5 to high
-    // Delay(1000);
-    printf("%d \n", mystick);
-    if(mycount != 0)
-    {
-		   printf("our count is %d \n", mycount);
-    }
-    
-    
-    mycount = 0;
-    
-	} 
-	else
-	{
-		GPIOA->ODR &= ~GPIO_ODR_5;   
-	  Delay(1000);
-	}
-
-    /* USER CODE BEGIN 3 */
+      if(boardButton() == 0)
+      {
+        GPIOA->ODR |= GPIO_ODR_5;
+        HAL_Delay(1000);
+        GPIOA->ODR &= ~GPIO_ODR_5;
+        HAL_Delay(300);
+      }
   }
-  /* USER CODE END 3 */
   return 0;
 }
-
 
 
 void EXTI0_IRQHandler(void)
